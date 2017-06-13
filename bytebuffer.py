@@ -2,10 +2,19 @@ from struct import *
 
 class ByteBuffer():
     def __init__(self, input = b'', offset = 0, endian = '>'):
-        self.data = input
+        if isinstance(input, bytearray):
+            self.data = input
+        else:
+            self.data = bytearray(input)
         self.endian = endian
         self.offset = offset
         self.end = len(self.data)
+
+    def _format_type(self, type, count):
+        if count is None:
+            return self.endian + type
+        else:
+            return self.endian + str(count) + type
 
     def get(self, type, count = None):
         ret = self.peek(type, count)
@@ -16,19 +25,25 @@ class ByteBuffer():
         return ret
 
     def peek(self, type, count = None):
-        if count is None:
-            fmt = self.endian + type
-        else:
-            fmt = self.endian + str(count) + type
+        fmt = self._format_type(type, count)
         ret = unpack(fmt, self.data[self.offset:self.offset+calcsize(fmt)])
         return ret[0] if count is None else ret
 
-    def append(self, data, type, count = 1):
-        if count is None:
-            fmt = self.endian + type
+    def append(self, data, type, count = None):
+        fmt = self._format_type(type, count)
+        self.offset += calcsize(fmt)
+        if isinstance(data, list):
+            self.data.extend(pack(fmt, *data))
         else:
-            fmt = self.endian + str(count) + type
-        self.data += pack(fmt, data)
+            self.data.extend(pack(fmt, data))
+
+    def set(self, data, offset, type, count = None):
+        fmt = self._format_type(type, count)
+        if isinstance(data, list):
+            pack_into(fmt, self.data, offset, *data)
+        else:
+            pack_into(fmt, self.data, offset, data)
+        self.offset += calcsize(fmt)
 
     def hasData(self):
         return self.offset < self.end
@@ -62,10 +77,17 @@ def _make_append(fmt):
         return self.append(data, fmt)
     return _method
 
+def _make_set(fmt):
+    def _method(self, data, offset):
+        return self.set(data, offset, fmt)
+    return _method
+
 for name, fmt in typeMap.iteritems():
     _get = _make_get(fmt)
     _peek = _make_peek(fmt)
     _append = _make_append(fmt)
+    _set = _make_set(fmt)
     setattr(ByteBuffer, 'get_' + name, _get)
     setattr(ByteBuffer, 'peek_' + name, _peek)
     setattr(ByteBuffer, 'append_' + name, _append)
+    setattr(ByteBuffer, 'set_' + name, _set)

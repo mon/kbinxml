@@ -1,6 +1,6 @@
 
 def jisString(string):
-    return string.encode('shift_jisx0213')
+    return string.encode('shift_jisx0213') + '\0'
 
 xml_formats = {
     1  : { 'type' : None, 'count' : None, 'pType' : None,  'names' : ['void']},
