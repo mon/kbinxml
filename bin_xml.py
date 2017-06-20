@@ -174,17 +174,6 @@ class kbinxml():
         self.nodeBuf.append_u8(len(name))
         self.pack_bits(name)
 
-        import operator
-        sorted_x = sorted(node.attributes.items(), key=operator.itemgetter(0))
-        for key, value in sorted_x:#node.attributes.items():
-            if key in ['__type', '__size', '__count']:
-                pass
-            else:
-                self.data_append_string(value)
-                self.nodeBuf.append_u8(xml_types['attr'])
-                self.nodeBuf.append_u8(len(key))
-                self.pack_bits(key)
-
         if nodeType != 'void':
             fmt = xml_formats[nodeId]
 
@@ -204,6 +193,17 @@ class kbinxml():
             else:
                 self.data_append_aligned(data, fmt['type'], fmt['count'])
 
+        import operator
+        sorted_x = sorted(node.attributes.items(), key=operator.itemgetter(0))
+        for key, value in sorted_x:#node.attributes.items():
+            if key in ['__type', '__size', '__count']:
+                pass
+            else:
+                self.data_append_string(value)
+                self.nodeBuf.append_u8(xml_types['attr'])
+                self.nodeBuf.append_u8(len(key))
+                self.pack_bits(key)
+                
         for child in node.childNodes:
             if child.nodeType != child.TEXT_NODE:
                 self._node_to_binary(child)
