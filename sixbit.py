@@ -24,7 +24,7 @@ def unpack_sixbit(byteBuf):
     byteBuf.offset += (length * 6 + 7) // 8
     return sixbit_to_str(result)
 
-# 0-9 for numbers, 10 to 36 for capitals, 37 for underscore, 38-63 for lowercase
+# 0-9 for numbers, 10 is ':', 11 to 36 for capitals, 37 for underscore, 38-63 for lowercase
 def sixbit_to_str(decompressed):
     string = ''
     for d in decompressed:
@@ -42,7 +42,7 @@ def sixbit_to_str(decompressed):
 def str_to_sixbit(string):
     compress = []
     for c in string:
-        if c >= '0' and c <= '9':
+        if c >= '0' and c <= ':':
             compress.append(ord(c) - ord('0'))
         elif c >= 'A' and c <= 'Z':
             compress.append(ord(c) - 54)
