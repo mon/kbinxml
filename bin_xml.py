@@ -83,6 +83,12 @@ class kbinxml():
                 raise ValueError('Node name can only contain alphanumeric + underscore')
         return ''.join(map(chr, compress))
 
+    def align_dataBuf(self):
+        # padding
+        while len(self.dataBuf) % 4:
+            self.dataBuf.append_u8(0)
+        
+    
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
         ret = [self.dataBuf.get_u8() for x in range(size)]
@@ -95,10 +101,7 @@ class kbinxml():
     def data_append_auto(self, data):
         self.dataBuf.append_s32(len(data))
         self.dataBuf.append(data, 's', len(data))
-
-        # padding
-        while len(self.dataBuf) % 4:
-            self.dataBuf.append_u8(0)
+        self.align_dataBuf()
 
     def data_append_string(self, string):
         string = string.encode('shift_jisx0213') + '\0'
@@ -151,6 +154,7 @@ class kbinxml():
             self.dataWordBuf.set(data, self.dataWordBuf.offset, type, count)
         else:
             self.dataBuf.append(data, type, count)
+            self.align_dataBuf()
 
     def is_binary_xml(self, input):
         nodeBuf = ByteBuffer(input)
@@ -188,8 +192,7 @@ class kbinxml():
                 self.dataBuf.append_u32(len(data) * calcsize(fmt['type']))
                 self.dataBuf.append(data, fmt['type'], len(data))
                 # padding
-                while len(self.dataBuf) % 4:
-                    self.dataBuf.append_u8(0)
+                self.align_dataBuf()
             else:
                 self.data_append_aligned(data, fmt['type'], fmt['count'])
 
@@ -227,8 +230,7 @@ class kbinxml():
             self._node_to_binary(child)
 
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
-        while len(self.nodeBuf) % 4 != 0:
-            self.nodeBuf.append_u8(0)
+        self.align_dataBuf()
         header.append_u32(len(self.nodeBuf))
         self.nodeBuf.append_u32(len(self.dataBuf))
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
