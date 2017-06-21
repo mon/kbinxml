@@ -220,7 +220,7 @@ class kbinxml():
         header = ByteBuffer()
         header.append_u16(SIGNATURE)
         header.append_u8(4 << 5) # SHIFT-JIS TODO make encoding variable
-        header.append_u8(0x7F) # TODO what does this do as 7f or ff
+        header.append_u8(0x7F) # Binary negation of encoding variable
         self.nodeBuf = ByteBuffer()
         self.dataBuf = ByteBuffer()
         self.dataByteBuf = ByteBuffer(self.dataBuf.data)
@@ -230,7 +230,9 @@ class kbinxml():
             self._node_to_binary(child)
 
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
-        self.align_dataBuf()
+        # align nodeBuf
+        while len(self.nodeBuf) % 4 != 0:
+            self.nodeBuf.append_u8(0)
         header.append_u32(len(self.nodeBuf))
         self.nodeBuf.append_u32(len(self.dataBuf))
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
