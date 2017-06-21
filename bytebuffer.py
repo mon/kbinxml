@@ -48,6 +48,14 @@ class ByteBuffer():
     def hasData(self):
         return self.offset < self.end
 
+    def realign_writes(self, size = 4):
+        while len(self) % size:
+            self.append_u8(0)
+
+    def realign_reads(self, size = 4):
+        while self.offset % size:
+            self.offset += 1
+
     def __len__(self):
         return len(self.data)
 

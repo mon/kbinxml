@@ -86,19 +86,13 @@ class kbinxml():
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
         ret = [self.dataBuf.get_u8() for x in range(size)]
-        # padding
-        self.dataBuf.offset += 3
-        # round to dword
-        self.dataBuf.offset &= ~0b11
+        self.dataBuf.realign_reads()
         return ret
 
     def data_append_auto(self, data):
         self.dataBuf.append_s32(len(data))
         self.dataBuf.append(data, 's', len(data))
-
-        # padding
-        while len(self.dataBuf) % 4:
-            self.dataBuf.append_u8(0)
+        self.dataBuf.realign_writes()
 
     def data_append_string(self, string):
         string = string.encode('shift_jisx0213') + '\0'
@@ -127,10 +121,11 @@ class kbinxml():
             ret = self.dataWordBuf.get(type, count)
         else:
             ret = self.dataBuf.get(type, count)
+            self.dataBuf.realign_reads()
         trailing = max(self.dataByteBuf.offset, self.dataWordBuf.offset)
         if self.dataBuf.offset < trailing:
-            self.dataBuf.offset = trailing + 3
-            self.dataBuf.offset &= ~0b11
+            self.dataBuf.offset = trailing
+            self.dataBuf.realign_reads()
         return ret
 
     def data_append_aligned(self, data, type, count):
@@ -151,6 +146,8 @@ class kbinxml():
             self.dataWordBuf.set(data, self.dataWordBuf.offset, type, count)
         else:
             self.dataBuf.append(data, type, count)
+            self.dataBuf.realign_writes()
+
 
     def is_binary_xml(self, input):
         nodeBuf = ByteBuffer(input)
@@ -187,9 +184,7 @@ class kbinxml():
             if isArray or fmt['count'] == -1:
                 self.dataBuf.append_u32(len(data) * calcsize(fmt['type']))
                 self.dataBuf.append(data, fmt['type'], len(data))
-                # padding
-                while len(self.dataBuf) % 4:
-                    self.dataBuf.append_u8(0)
+                self.dataBuf.realign_writes()
             else:
                 self.data_append_aligned(data, fmt['type'], fmt['count'])
 
@@ -227,8 +222,7 @@ class kbinxml():
             self._node_to_binary(child)
 
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
-        while len(self.nodeBuf) % 4 != 0:
-            self.nodeBuf.append_u8(0)
+        self.nodeBuf.realign_writes()
         header.append_u32(len(self.nodeBuf))
         self.nodeBuf.append_u32(len(self.dataBuf))
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
@@ -319,8 +313,7 @@ class kbinxml():
 
             if isArray or nodeFormat['count'] == -1:
                 data = self.dataBuf.get(nodeFormat['type'], totalCount)
-                self.dataBuf.offset += 3 # padding
-                self.dataBuf.offset &= ~0b11 # align to dword
+                self.dataBuf.realign_reads()
             else:
                 data = self.data_grab_aligned(nodeFormat['type'], totalCount)
             string = delim.join(map(str, data))
