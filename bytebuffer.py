@@ -2,6 +2,8 @@ from struct import *
 
 class ByteBuffer():
     def __init__(self, input = b'', offset = 0, endian = '>'):
+        # so multiple ByteBuffers can hold on to one set of underlying data
+        # this is useful for writers in multiple locations
         if isinstance(input, bytearray):
             self.data = input
         else:
@@ -26,20 +28,20 @@ class ByteBuffer():
 
     def peek(self, type, count = None):
         fmt = self._format_type(type, count)
-        ret = unpack(fmt, self.data[self.offset:self.offset+calcsize(fmt)])
+        ret = unpack_from(fmt, self.data, self.offset)
         return ret[0] if count is None else ret
 
     def append(self, data, type, count = None):
         fmt = self._format_type(type, count)
         self.offset += calcsize(fmt)
-        if isinstance(data, list):
+        if isinstance(data, list) or isinstance(data, bytes) and type != 's':
             self.data.extend(pack(fmt, *data))
         else:
             self.data.extend(pack(fmt, data))
 
     def set(self, data, offset, type, count = None):
         fmt = self._format_type(type, count)
-        if isinstance(data, list):
+        if isinstance(data, list) or isinstance(data, bytes) and type != 's':
             pack_into(fmt, self.data, offset, *data)
         else:
             pack_into(fmt, self.data, offset, data)

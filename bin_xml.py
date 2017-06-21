@@ -1,102 +1,71 @@
 from xml.dom import minidom
 from struct import calcsize
 import string
-from bitarray import bitarray
-from bytebuffer import ByteBuffer
-from format_ids import xml_formats, xml_types
 import sys
+import operator
+
+from bytebuffer import ByteBuffer
+from sixbit import pack_sixbit, unpack_sixbit
+from format_ids import xml_formats, xml_types
 
 DEBUG_OFFSETS = False
 DEBUG = False
 
-SIGNATURE = 0xA042
+SIGNATURE = 0xA0
 
-encodings = [
-    None,
-    'ASCII',
-    'ISO-8859-1',
-    'EUC-JP',
-    'SHIFT_JIS',
-    'UTF-8'
-]
+SIG_COMPRESSED = 0x42
+SIG_UNCOMPRESSED = 0x45
+
+XML_ENCODING = 'UTF_8'
+BIN_ENCODING = 'SHIFT_JISX0213'
+
+# NOTE: all of these are their python codec names
+encoding_strings = {
+    0x20: 'ASCII',
+    0x00: 'ISO-8859-1',
+    0x60: 'EUC_JP',
+    0x80: 'SHIFT_JISX0213',
+    0xA0: 'UTF_8'
+}
+
+encoding_vals = {val : key for key, val in encoding_strings.items()}
 
 def debug_print(string):
     if DEBUG:
         print string
 
-class kbinxml():
+class KBinXML():
 
     def __init__(self, input):
         if isinstance(input, minidom.Document):
             self.xml_doc = input
-        elif self.is_binary_xml(input):
+        elif KBinXML.is_binary_xml(input):
             self.from_binary(input)
         else:
             self.from_text(input)
 
-    def pack_bits(self, string, bits = 6):
-        chars = self.str_to_sixbit(string)
-        bits = bitarray(endian='big')
-        for c in chars:
-            bits.frombytes(c)
-            del bits[-8:-6]
-        for c in bits.tobytes():
-            self.nodeBuf.append_u8(ord(c))
+    def to_text(self):
+        return self.xml_doc.toprettyxml(indent = "    ", encoding = XML_ENCODING)
 
-    def unpack_bits(self, length, bits = 6):
-        result = []
-        offset = self.nodeBuf.offset * 8
-        for i in range(length):
-            result.append(ord(self.nodeBits[offset:offset+bits].tobytes()) >> (8 - bits))
-            offset += bits
-        # padding
-        self.nodeBuf.offset += (length * bits + 7) // 8
-        return self.sixbit_to_str(result)
+    def from_text(self, input):
+        self.xml_doc = minidom.parseString(input)
 
-    # 0-9 for numbers, 10 to 36 for capitals, 37 for underscore, 38-63 for lowercase
-    def sixbit_to_str(self, decompressed):
-        string = ''
-        for d in decompressed:
-            if d <= 10:
-                d += ord('0')
-            elif d < 37:
-                d += 54
-            elif d == 37:
-                d += 58
-            else:
-                d += 59
-            string += chr(d)
-        return string
-
-    def str_to_sixbit(self, string):
-        compress = []
-        for c in string:
-            if c >= '0' and c <= '9':
-                compress.append(ord(c) - ord('0'))
-            elif c >= 'A' and c <= 'Z':
-                compress.append(ord(c) - 54)
-            elif c == '_':
-                compress.append(ord(c) - 58)
-            elif c >= 'a' and c <= 'z':
-                compress.append(ord(c) - 59)
-            else:
-                raise ValueError('Node name can only contain alphanumeric + underscore')
-        return ''.join(map(chr, compress))
+    @staticmethod
+    def is_binary_xml(input):
+        nodeBuf = ByteBuffer(input)
+        return (nodeBuf.get_u8() == SIGNATURE and
+            nodeBuf.get_u8() in (SIG_COMPRESSED, SIG_UNCOMPRESSED))
 
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
-        ret = [self.dataBuf.get_u8() for x in range(size)]
+        ret = self.dataBuf.get('b', size)
         self.dataBuf.realign_reads()
         return ret
 
     def data_append_auto(self, data):
         self.dataBuf.append_s32(len(data))
-        self.dataBuf.append(data, 's', len(data))
+        self.dataBuf.append(data, 'b', len(data))
         self.dataBuf.realign_writes()
-
-    def data_append_string(self, string):
-        string = string.encode('shift_jisx0213') + '\0'
-        self.data_append_auto(string)
 
     def data_grab_string(self):
         data = self.data_grab_auto()
@@ -105,7 +74,11 @@ class kbinxml():
             if b == 0:
                 break
             res += chr(b)
-        return res.decode('shift_jisx0213')
+        return res.decode(self.encoding)
+
+    def data_append_string(self, string):
+        string = string.encode(self.encoding) + '\0'
+        self.data_append_auto(string)
 
     # has its own separate state and other assorted garbage
     def data_grab_aligned(self, type, count):
@@ -136,7 +109,7 @@ class kbinxml():
         # multiply by count since 2u2 reads from the 16 bit buffer, for example
         size = calcsize(type) * count
         if size == 1:
-            # make room if fresh dword for our stuff
+            # make room for our stuff if fresh dword
             if self.dataByteBuf.offset % 4 == 0:
                 self.dataBuf.append_u32(0)
             self.dataByteBuf.set(data, self.dataByteBuf.offset, type, count)
@@ -147,11 +120,6 @@ class kbinxml():
         else:
             self.dataBuf.append(data, type, count)
             self.dataBuf.realign_writes()
-
-
-    def is_binary_xml(self, input):
-        nodeBuf = ByteBuffer(input)
-        return nodeBuf.get_u16() == SIGNATURE
 
     def _node_to_binary(self, node):
         nodeType = node.getAttribute('__type')
@@ -168,18 +136,19 @@ class kbinxml():
         self.nodeBuf.append_u8(nodeId | isArray)
 
         name = node.nodeName
-        self.nodeBuf.append_u8(len(name))
-        self.pack_bits(name)
+        pack_sixbit(name, self.nodeBuf)
 
         if nodeType != 'void':
             fmt = xml_formats[nodeId]
 
             val = node.firstChild.nodeValue
-            if fmt['count'] != -1:
-                val = val.split(fmt.get('delimiter', ' '))
-                data = map(fmt['pType'], val)
+            if fmt['name'] == 'bin':
+                data = bytes(bytearray.fromhex(val))
+            elif fmt['name'] == 'str':
+                data = val.encode(self.encoding) + '\0'
             else:
-                data = fmt['pType'](val)
+                val = val.split(fmt.get('delimiter', ' '))
+                data = map(fmt['pyType'], val)
 
             if isArray or fmt['count'] == -1:
                 self.dataBuf.append_u32(len(data) * calcsize(fmt['type']))
@@ -188,31 +157,30 @@ class kbinxml():
             else:
                 self.data_append_aligned(data, fmt['type'], fmt['count'])
 
-        import operator
-        sorted_x = sorted(node.attributes.items(), key=operator.itemgetter(0))
-        for key, value in sorted_x:#node.attributes.items():
-            if key in ['__type', '__size', '__count']:
-                pass
-            else:
+        # for consistency and to be more faithful
+        sorted_attrs = sorted(node.attributes.items(), key=operator.itemgetter(0))
+        for key, value in sorted_attrs:
+            if key not in ['__type', '__size', '__count']:
                 self.data_append_string(value)
                 self.nodeBuf.append_u8(xml_types['attr'])
-                self.nodeBuf.append_u8(len(key))
-                self.pack_bits(key)
-                
+                pack_sixbit(key, self.nodeBuf)
+
         for child in node.childNodes:
             if child.nodeType != child.TEXT_NODE:
                 self._node_to_binary(child)
 
+        # always has the isArray bit set
         self.nodeBuf.append_u8(xml_types['nodeEnd'] | 64)
 
-    def from_text(self, input):
-        self.xml_doc = minidom.parseString(input)
-
     def to_binary(self):
+        self.encoding = BIN_ENCODING
+
         header = ByteBuffer()
-        header.append_u16(SIGNATURE)
-        header.append_u8(4 << 5) # SHIFT-JIS TODO make encoding variable
-        header.append_u8(0x7F) # TODO what does this do as 7f or ff
+        header.append_u8(SIGNATURE)
+        header.append_u8(SIG_COMPRESSED)
+        header.append_u8(encoding_vals[self.encoding])
+        # Python's ints are big, so can't just bitwise invert
+        header.append_u8(0xFF ^ encoding_vals[self.encoding])
         self.nodeBuf = ByteBuffer()
         self.dataBuf = ByteBuffer()
         self.dataByteBuf = ByteBuffer(self.dataBuf.data)
@@ -221,34 +189,34 @@ class kbinxml():
         for child in self.xml_doc.childNodes:
             self._node_to_binary(child)
 
+        # always has the isArray bit set
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
         self.nodeBuf.realign_writes()
         header.append_u32(len(self.nodeBuf))
         self.nodeBuf.append_u32(len(self.dataBuf))
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
 
-    def to_text(self):
-        return self.xml_doc.toprettyxml(indent="    ", encoding='UTF-8')
-
     def from_binary(self, input):
         self.xml_doc = minidom.Document()
         node = self.xml_doc
 
         self.nodeBuf = ByteBuffer(input)
-        assert self.nodeBuf.get_u16() == SIGNATURE
-        encoding = encodings[(self.nodeBuf.get_u8() & 0xE0) >> 5]
-        unknown = self.nodeBuf.get_u8()
+        assert self.nodeBuf.get_u8() == SIGNATURE
 
-        # creating bitarrays is slow, cache for speed
-        self.nodeBits = bitarray(endian='big')
-        self.nodeBits.frombytes(input)
+        compress = self.nodeBuf.get_u8()
+        assert compress in (SIG_COMPRESSED, SIG_UNCOMPRESSED)
+        self.compressed = compress == SIG_COMPRESSED
+
+        encoding_key = self.nodeBuf.get_u8()
+        assert self.nodeBuf.get_u8() == 0xFF ^ encoding_key
+        self.encoding = encoding_strings[encoding_key]
 
         nodeEnd = self.nodeBuf.get_u32() + 8
         self.nodeBuf.end = nodeEnd
 
         self.dataBuf = ByteBuffer(input, nodeEnd)
         dataSize = self.dataBuf.get_u32()
-        # WHY MUST YOU DO THIS TO ME
+        # This is all no fun
         self.dataByteBuf = ByteBuffer(input, nodeEnd)
         self.dataWordBuf = ByteBuffer(input, nodeEnd)
 
@@ -265,11 +233,14 @@ class kbinxml():
             nodeFormat = xml_formats.get(nodeType, {'name':'Unknown'})
             debug_print('Node type is {} ({})'.format(nodeFormat['name'], nodeType))
 
-            # node name
+            # node or attribute name
             name = ''
             if nodeType != xml_types['nodeEnd'] and nodeType != xml_types['endSection']:
-                strLen = self.nodeBuf.get_u8()
-                name = self.unpack_bits(strLen)
+                if self.compressed:
+                    name = unpack_sixbit(self.nodeBuf)
+                else:
+                    length = self.nodeBuf.get_u8()
+                    name = self.nodeBuf.get('s', length)
                 debug_print(name)
 
             skip = True
@@ -321,27 +292,20 @@ class kbinxml():
             if nodeType == xml_types['binary']:
                 node.setAttribute('__size', str(totalCount))
                 string = ''.join(('{0:02x}'.format(ord(x)) for x in string))
-            if nodeType == xml_types['string']:
-                string = string[:-1].decode('shift_jisx0213')
+            elif nodeType == xml_types['string']:
+                string = string[:-1].decode(self.encoding)
 
             node.appendChild(self.xml_doc.createTextNode(string))
 
-            #print self.xml_doc.toprettyxml(indent="  ", encoding='UTF-8')
-
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print 'bin_xml.py file1 [file2 ...]'
+    if len(sys.argv) != 2:
+        print 'bin_xml.py file.[xml/bin]'
 
-    # by default, confirm the implementation is correct
-    for f in sys.argv[1:]:
-        with open(f, 'rb') as f:
-            input = f.read()
-        xml = kbinxml(input)
+    with open(sys.argv[1:], 'rb') as f:
+        input = f.read()
+
+    xml = KBinXML(input)
+    if KBinXML.is_binary_xml(input):
         print xml.to_text()
-        try:
-            # just politely ignore the signature since we don't do encoding yet
-            assert xml.to_binary()[4:] == input[4:]
-        except AssertionError:
-            print 'Files do not match!'
-            with open('out.raw', 'wb') as f:
-                f.write(xml.to_binary())
+    else:
+        print xml.to_binary()
