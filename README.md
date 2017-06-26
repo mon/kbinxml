@@ -2,6 +2,12 @@
 
 An encoder/decoder for Konami's binary XML format, used in some of their games.
 
+### Setup:
+`pip install bitarray`
+
+Python 2 only:  
+`pip install future`
+
 ```python
 In [1]: from kbinxml import KBinXML
 In [2]: text = KBinXML('<?xml version="1.0"?><root __type="str">Hello, world!</root>')

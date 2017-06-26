@@ -1,27 +1,28 @@
+# python 3 style, ints instead of b''
+from builtins import bytes
 from bitarray import bitarray
 
 def pack_sixbit(string, byteBuf):
     chars = str_to_sixbit(string)
     bits = bitarray(endian='big')
     for c in chars:
-        bits.frombytes(c)
+        bits.frombytes(c.encode())
         # leave only the 6 bits we care for
         del bits[-8:-6]
-    data = bits.tobytes()
+    data = bytes(bits.tobytes())
     byteBuf.append_u8(len(string))
-    byteBuf.append(data, 'c', len(data))
+    byteBuf.append(data, 'B', len(data))
 
 def unpack_sixbit(byteBuf):
-    bitBuf = bitarray(endian='big')
-    bitBuf.frombytes(bytes(byteBuf.data))
     length = byteBuf.get_u8()
+    length_bytes = (length * 6 + 7) // 8
+    bitBuf = bitarray(endian='big')
+    bitBuf.frombytes(bytes(byteBuf.get('B', length_bytes)))
     result = []
-    offset = byteBuf.offset * 8
+    offset = 0
     for i in range(length):
         result.append(ord(bitBuf[offset:offset+6].tobytes()) >> (8 - 6))
         offset += 6
-    # padding
-    byteBuf.offset += (length * 6 + 7) // 8
     return sixbit_to_str(result)
 
 # 0-9 for numbers, 10 is ':', 11 to 36 for capitals, 37 for underscore, 38-63 for lowercase

@@ -7,6 +7,8 @@ class ByteBuffer():
         if isinstance(input, bytearray):
             self.data = input
         else:
+            if not isinstance(input, bytes):
+                input = input.encode('utf-8')
             self.data = bytearray(input)
         self.endian = endian
         self.offset = offset
@@ -34,14 +36,14 @@ class ByteBuffer():
     def append(self, data, type, count = None):
         fmt = self._format_type(type, count)
         self.offset += calcsize(fmt)
-        if isinstance(data, list) or isinstance(data, bytes) and type != 's':
+        if count and count > 1 or isinstance(data, list):
             self.data.extend(pack(fmt, *data))
         else:
             self.data.extend(pack(fmt, data))
 
     def set(self, data, offset, type, count = None):
         fmt = self._format_type(type, count)
-        if isinstance(data, list) or isinstance(data, bytes) and type != 's':
+        if count and count > 1 or isinstance(data, list):
             pack_into(fmt, self.data, offset, *data)
         else:
             pack_into(fmt, self.data, offset, data)
@@ -92,7 +94,7 @@ def _make_set(fmt):
         return self.set(data, offset, fmt)
     return _method
 
-for name, fmt in typeMap.iteritems():
+for name, fmt in typeMap.items():
     _get = _make_get(fmt)
     _peek = _make_peek(fmt)
     _append = _make_append(fmt)
