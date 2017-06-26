@@ -1,11 +1,14 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF_8"?>
 <test>
-    <entry __type="ip4" __count="2">127.0.0.1 192.168.0.1</entry>
+    <entry __count="2" __type="ip4">127.0.0.1 192.168.0.1</entry>
     <entry __type="str" attr="test" attr2="best">Hello, world!</entry>
     <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
     <aligned __type="u8">12</aligned>
-    <entry __type="bin" __size="4">deadbeef</entry>
-    <entry __type="bin" __size="4">deadbe7a</entry>
+    <entry __size="4" __type="bin">deadbeef</entry>
+    <entry __size="4" __type="bin">deadbe7a</entry>
+    <entry __count="2" __type="3u8">1 2 3 1 2 3</entry>
+    <no_friends/>
+    <food_for_thought bread="tasty"/>
     <entry __type="s8">123</entry>
     <entry __type="u8">123</entry>
     <entry __type="s16">123</entry>
@@ -14,8 +17,8 @@
     <entry __type="u32">123</entry>
     <entry __type="s64">123</entry>
     <entry __type="u64">123</entry>
-    <entry __type="bin" __size="4">f00d1337</entry>
-    <entry __type="bin" __size="4">deadbeef</entry>
+    <entry __size="4" __type="bin">f00d1337</entry>
+    <entry __size="4" __type="bin">deadbeef</entry>
     <entry __type="str">TEST STRING 2</entry>
     <entry __type="str">TEST STRING</entry>
     <entry __type="ip4">192.168.0.1</entry>
@@ -24,7 +27,7 @@
     <entry __type="double">123.100000</entry>
     <entry __type="double">123.100000</entry>
     <entry __type="2s8">127 -23</entry>
-    <entry __type="2u8">232 12</entry>
+    <entry __count="2" __type="2u8">232 12 13 14</entry>
     <entry __type="2s16">1232 -5433</entry>
     <entry __type="2u16">345 3455</entry>
     <entry __type="2s32">123123 -12672</entry>

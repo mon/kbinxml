@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="SHIFT_JIS"?>
+<!-- ^ multibyte encoding flag -->
 <test>
     <!-- Correct formatting + arrays -->
     <entry __type="ip4" __count="2">127.0.0.1 192.168.0.1</entry>
@@ -12,6 +13,12 @@
     <entry __type="binary">DEADBEEF</entry>
     <!-- Lowercase, too -->
     <entry __type="bin">deadbe7a</entry>
+    <!-- Array of array -->
+    <entry __type="3u8" __count="2">1 2 3 1 2 3</entry>
+    <!-- Tag with no text element -->
+    <no_friends/>
+    <!-- Tag with no text element and some attrs -->
+    <food_for_thought bread="tasty"/>
     
     <!-- Simple cases for the rest of the formats -->
     <entry __type="s8">123</entry>
@@ -32,7 +39,7 @@
     <entry __type="d">123.100</entry>
     <entry __type="double">123.100</entry>
     <entry __type="2s8">127 -23</entry>
-    <entry __type="2u8">232 12</entry>
+    <entry __type="2u8" __count="2">232 12 13 14</entry>
     <entry __type="2s16">1232 -5433</entry>
     <entry __type="2u16">345 3455</entry>
     <entry __type="2s32">123123 -12672</entry>
