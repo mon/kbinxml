@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<test>
+    <entry __type="ip4" __count="2">127.0.0.1 192.168.0.1</entry>
+    <entry __type="str" attr="test" attr2="best">Hello, world!</entry>
+    <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
+    <aligned __type="u8">12</aligned>
+    <entry __type="bin" __size="4">deadbeef</entry>
+    <entry __type="bin" __size="4">deadbe7a</entry>
+    <entry __type="s8">123</entry>
+    <entry __type="u8">123</entry>
+    <entry __type="s16">123</entry>
+    <entry __type="u16">123</entry>
+    <entry __type="s32">123</entry>
+    <entry __type="u32">123</entry>
+    <entry __type="s64">123</entry>
+    <entry __type="u64">123</entry>
+    <entry __type="bin" __size="4">f00d1337</entry>
+    <entry __type="bin" __size="4">deadbeef</entry>
+    <entry __type="str">TEST STRING 2</entry>
+    <entry __type="str">TEST STRING</entry>
+    <entry __type="ip4">192.168.0.1</entry>
+    <entry __type="float">123.099998</entry>
+    <entry __type="float">123.099998</entry>
+    <entry __type="double">123.100000</entry>
+    <entry __type="double">123.100000</entry>
+    <entry __type="2s8">127 -23</entry>
+    <entry __type="2u8">232 12</entry>
+    <entry __type="2s16">1232 -5433</entry>
+    <entry __type="2u16">345 3455</entry>
+    <entry __type="2s32">123123 -12672</entry>
+    <entry __type="2u32">5345 76575</entry>
+    <entry __type="2s64">5687 -5687</entry>
+    <entry __type="2s64">-6582345 52345</entry>
+    <entry __type="2u64">82345 52345</entry>
+    <entry __type="2u64">6582345 52345</entry>
+    <entry __type="2f">-32.000000 12.000000</entry>
+    <entry __type="2d">-32.000000 12.000000</entry>
+    <entry __type="2d">-32.000000 12.000000</entry>
+    <entry __type="3s8">28 127 -124</entry>
+    <entry __type="3u8">2 4 255</entry>
+    <entry __type="3s16">2842 12427 -14224</entry>
+    <entry __type="3u16">242 424 24255</entry>
+    <entry __type="3s32">2248 175627 -12244</entry>
+    <entry __type="3u32">24422 44242 25245</entry>
+    <entry __type="3s64">2898 10927 -12094</entry>
+    <entry __type="3u64">28908 8904 2955</entry>
+    <entry __type="3f">-32.000000 12.000000 3.000000</entry>
+    <entry __type="3d">-32.000000 12.000000 3.000000</entry>
+    <entry __type="4s8">24 28 127 -124</entry>
+    <entry __type="4u8">1 2 255 255</entry>
+    <entry __type="4s16">-34 -53 -23 34</entry>
+    <entry __type="4u16">123 123 154 654</entry>
+    <entry __type="4s32">12 132 656 -4565</entry>
+    <entry __type="4s32">12 132 -656 4565</entry>
+    <entry __type="4u32">12 132 656 4565</entry>
+    <entry __type="4u32">12 132 656 4565</entry>
+    <entry __type="4s64">-31231 5128741 -123222 129381231</entry>
+    <entry __type="4u64">31231 5128741 1280371203 129381231</entry>
+    <entry __type="4f">-32.000000 12.000000 3.000000 2.000000</entry>
+    <entry __type="4f">5.000000 52.000000 -12.000000 32.000000</entry>
+    <entry __type="4d">1.000000 3.000000 4.000000 -1.000000</entry>
+    <entry __type="vs8">1 3 5 7 12 16 46 76 93 123 0 -124 -123 -12 -42 -56</entry>
+    <entry __type="vu8">1 3 5 7 12 16 46 76 93 123 178 240 255 127 126 255</entry>
+    <entry __type="vs16">93 123 0 -124 -123 -12 -42 -56</entry>
+    <entry __type="vu16">16 46 76 93 123 178 240 255</entry>
+    <entry __type="bool">1</entry>
+    <entry __type="bool">1</entry>
+    <entry __type="2b">0 1</entry>
+    <entry __type="3b">1 0 1</entry>
+    <entry __type="4b">1 1 1 0</entry>
+    <entry __type="vb">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</entry>
+</test>
