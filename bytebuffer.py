@@ -36,16 +36,16 @@ class ByteBuffer():
     def append(self, data, type, count = None):
         fmt = self._format_type(type, count)
         self.offset += calcsize(fmt)
-        if count and count > 1 or isinstance(data, list):
+        try:
             self.data.extend(pack(fmt, *data))
-        else:
+        except TypeError:
             self.data.extend(pack(fmt, data))
 
     def set(self, data, offset, type, count = None):
         fmt = self._format_type(type, count)
-        if count and count > 1 or isinstance(data, list):
+        try:
             pack_into(fmt, self.data, offset, *data)
-        else:
+        except TypeError:
             pack_into(fmt, self.data, offset, data)
         self.offset += calcsize(fmt)
 
