@@ -1,11 +1,12 @@
 # python 3 style, ints instead of b''
 from builtins import bytes
-from xml.dom import minidom
 from struct import calcsize
 import string
 import sys
 import operator
+from io import BytesIO
 
+import lxml.etree as etree
 from bytebuffer import ByteBuffer
 from sixbit import pack_sixbit, unpack_sixbit
 from format_ids import xml_formats, xml_types
@@ -20,7 +21,7 @@ SIGNATURE = 0xA0
 SIG_COMPRESSED = 0x42
 SIG_UNCOMPRESSED = 0x45
 
-XML_ENCODING = 'UTF_8'
+XML_ENCODING = 'UTF-8'
 BIN_ENCODING = 'SHIFT_JISX0213'
 
 # NOTE: all of these are their python codec names
@@ -41,18 +42,22 @@ def debug_print(string):
 class KBinXML():
 
     def __init__(self, input):
-        if isinstance(input, minidom.Document):
+        if isinstance(input, etree._Element):
             self.xml_doc = input
+        elif isinstance(input, etree._ElementTree):
+            self.xml_doc = input.getroot()
         elif KBinXML.is_binary_xml(input):
             self.from_binary(input)
         else:
             self.from_text(input)
 
     def to_text(self):
-        return self.xml_doc.toprettyxml(indent = "    ", encoding = XML_ENCODING)
+        # we decode again because I want unicode, dammit
+        return etree.tostring(self.xml_doc, pretty_print=True,
+            encoding=XML_ENCODING, xml_declaration=True).decode(XML_ENCODING)
 
     def from_text(self, input):
-        self.xml_doc = minidom.parseString(input)
+        self.xml_doc = etree.parse(BytesIO(input)).getroot()
 
     @staticmethod
     def is_binary_xml(input):
@@ -121,28 +126,30 @@ class KBinXML():
             self.dataBuf.realign_writes()
 
     def _node_to_binary(self, node):
-        if node.nodeType == node.TEXT_NODE or node.nodeType == node.COMMENT_NODE:
-            return
-        nodeType = node.getAttribute('__type')
+        nodeType = node.attrib.get('__type')
         if not nodeType:
-            nodeType = 'void'
+            # typeless tags with text become string
+            if node.text is not None and len(node.text.strip()) > 0:
+                nodeType = 'str'
+            else:
+                nodeType = 'void'
         nodeId = xml_types[nodeType]
 
         isArray = 0
-        count = node.getAttribute('__count')
+        count = node.attrib.get('__count')
         if count:
             count = int(count)
             isArray = 64 # bit position for array flag
 
         self.nodeBuf.append_u8(nodeId | isArray)
 
-        name = node.nodeName
+        name = node.tag
         pack_sixbit(name, self.nodeBuf)
 
         if nodeType != 'void':
             fmt = xml_formats[nodeId]
 
-            val = node.firstChild.nodeValue
+            val = node.text
             if fmt['name'] == 'bin':
                 data = bytes(bytearray.fromhex(val))
             elif fmt['name'] == 'str':
@@ -161,14 +168,14 @@ class KBinXML():
                 self.data_append_aligned(data, fmt['type'], fmt['count'])
 
         # for test consistency and to be more faithful, sort the attrs
-        sorted_attrs = sorted(node.attributes.items(), key=operator.itemgetter(0))
+        sorted_attrs = sorted(node.attrib.items(), key=operator.itemgetter(0))
         for key, value in sorted_attrs:
             if key not in ['__type', '__size', '__count']:
                 self.data_append_string(value)
                 self.nodeBuf.append_u8(xml_types['attr'])
                 pack_sixbit(key, self.nodeBuf)
 
-        for child in node.childNodes:
+        for child in node.iterchildren(tag=etree.Element):
             self._node_to_binary(child)
 
         # always has the isArray bit set
@@ -188,8 +195,7 @@ class KBinXML():
         self.dataByteBuf = ByteBuffer(self.dataBuf.data)
         self.dataWordBuf = ByteBuffer(self.dataBuf.data)
 
-        for child in self.xml_doc.childNodes:
-            self._node_to_binary(child)
+        self._node_to_binary(self.xml_doc)
 
         # always has the isArray bit set
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
@@ -199,7 +205,7 @@ class KBinXML():
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
 
     def from_binary(self, input):
-        self.xml_doc = minidom.Document()
+        self.xml_doc = etree.Element('root')
         node = self.xml_doc
 
         self.nodeBuf = ByteBuffer(input)
@@ -249,10 +255,10 @@ class KBinXML():
 
             if nodeType == xml_types['attr']:
                 value = self.data_grab_string()
-                node.setAttribute(name, value)
+                node.attrib[name] = value
             elif nodeType == xml_types['nodeEnd']:
-                if node.parentNode:
-                    node = node.parentNode
+                if node.getparent() is not None:
+                    node = node.getparent()
             elif nodeType == xml_types['endSection']:
                 nodesLeft = False
             elif nodeType not in xml_formats:
@@ -263,14 +269,13 @@ class KBinXML():
             if skip:
                 continue
 
-            child = self.xml_doc.createElement(name)
-            node.appendChild(child)
+            child = etree.SubElement(node, name)
             node = child
 
             if nodeType == xml_types['nodeStart']:
                 continue
 
-            node.setAttribute('__type', nodeFormat['name'])
+            node.attrib['__type'] = nodeFormat['name']
 
             varCount = nodeFormat['count']
             arrayCount = 1
@@ -279,7 +284,7 @@ class KBinXML():
                 isArray = True
             elif isArray:
                 arrayCount = self.dataBuf.get_u32() // (calcsize(nodeFormat['type'] * varCount))
-                node.setAttribute('__count', str(arrayCount))
+                node.attrib['__count'] = str(arrayCount)
             totalCount = arrayCount * varCount
 
             if isArray:
@@ -289,14 +294,17 @@ class KBinXML():
                 data = self.data_grab_aligned(nodeFormat['type'], totalCount)
 
             if nodeType == xml_types['binary']:
-                node.setAttribute('__size', str(totalCount))
+                node.attrib['__size'] = str(totalCount)
                 string = ''.join(('{0:02x}'.format(x) for x in data))
             elif nodeType == xml_types['string']:
                 string = bytes(data[:-1]).decode(self.encoding)
             else:
                 string = ' '.join(map(nodeFormat.get('toStr', str), data))
 
-            node.appendChild(self.xml_doc.createTextNode(string))
+            node.text = string
+
+        # because we need the 'real' root
+        self.xml_doc = self.xml_doc[0]
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -308,6 +316,6 @@ if __name__ == '__main__':
 
     xml = KBinXML(input)
     if KBinXML.is_binary_xml(input):
-        stdout.write(xml.to_text())
+        stdout.write(xml.to_text().encode('utf-8'))
     else:
         stdout.write(xml.to_binary())
