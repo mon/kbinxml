@@ -67,13 +67,13 @@ class KBinXML():
 
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
-        ret = self.dataBuf.get('b', size)
+        ret = self.dataBuf.get('B', size)
         self.dataBuf.realign_reads()
         return ret
 
     def data_append_auto(self, data):
         self.dataBuf.append_s32(len(data))
-        self.dataBuf.append(data, 'b', len(data))
+        self.dataBuf.append(data, 'B', len(data))
         self.dataBuf.realign_writes()
 
     def data_grab_string(self):

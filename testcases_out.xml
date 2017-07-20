@@ -2,7 +2,7 @@
 <test>
   <entry __type="ip4" __count="2">127.0.0.1 192.168.0.1</entry>
   <entry __type="str" attr="test" attr2="best">Hello, world!</entry>
-  <superstar __type="str">シ　イス　マイ　ワイフ</superstar>
+  <superstar __type="str" babe="ミツル">シ　イス　マイ　ワイフ</superstar>
   <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
   <aligned __type="u8">12</aligned>
   <entry __type="bin" __size="4">deadbeef</entry>

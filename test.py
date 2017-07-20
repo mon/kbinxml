@@ -12,9 +12,9 @@ with open('testcases_out.kbin', 'rb') as f:
 k = KBinXML(xml_in)
 kbin = k.to_binary()
 if kbin != expected_bin:
-    with open('failed_test.bin', 'wb') as f:
+    with open('failed_test.kbin', 'wb') as f:
         f.write(kbin)
-    raise AssertionError('Binary output does not match, check failed_test.bin')
+    raise AssertionError('Binary output does not match, check failed_test.kbin')
 else:
     print('XML -> Binary correct!')
 

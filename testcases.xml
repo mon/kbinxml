@@ -6,7 +6,7 @@
     <!-- Attributes plus text -->
     <entry attr="test" attr2="best" __type="str">Hello, world!</entry>
     <!-- Testing encoding, plus __type-less should become string -->
-    <superstar>シ　イス　マイ　ワイフ</superstar>
+    <superstar babe="ミツル">シ　イス　マイ　ワイフ</superstar>
     <!-- Testing 6bit conversion -->
     <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
     <!-- Shouldn't have alignment issues from the 3u8 -->
