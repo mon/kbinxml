@@ -248,7 +248,8 @@ class KBinXML():
                     name = unpack_sixbit(self.nodeBuf)
                 else:
                     length = self.nodeBuf.get_u8()
-                    name = self.nodeBuf.get('s', length)
+                    name = self.nodeBuf.get('B', length - 0x3F)
+                    name = bytes(name).decode(self.encoding)
                 debug_print(name)
 
             skip = True
