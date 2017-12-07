@@ -30,7 +30,7 @@ encoding_strings = {
     0x00: 'ISO-8859-1',
     0x60: 'EUC_JP',
     0x80: 'SHIFT_JISX0213',
-    0xA0: 'UTF_8'
+    0xA0: 'UTF-8'
 }
 
 encoding_vals = {val : key for key, val in encoding_strings.items()}
@@ -153,7 +153,9 @@ class KBinXML():
             if fmt['name'] == 'bin':
                 data = bytes(bytearray.fromhex(val))
             elif fmt['name'] == 'str':
-                data = bytes(val.encode(self.encoding) + b'\0')
+                if val is None: # empty string
+                    val = ''
+                data = bytes(val.encode(self.encoding, 'replace') + b'\0')
             else:
                 val = val.split(' ')
                 data = list(map(fmt.get('fromStr', int), val))
@@ -247,8 +249,8 @@ class KBinXML():
                 if self.compressed:
                     name = unpack_sixbit(self.nodeBuf)
                 else:
-                    length = self.nodeBuf.get_u8()
-                    name = self.nodeBuf.get('B', length - 0x3F)
+                    length = (self.nodeBuf.get_u8() & ~64) + 1
+                    name = self.nodeBuf.get('B', length)
                     name = bytes(name).decode(self.encoding)
                 debug_print(name)
 
