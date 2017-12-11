@@ -7,9 +7,10 @@ import operator
 from io import BytesIO
 
 import lxml.etree as etree
-from bytebuffer import ByteBuffer
-from sixbit import pack_sixbit, unpack_sixbit
-from format_ids import xml_formats, xml_types
+
+from .bytebuffer import ByteBuffer
+from .sixbit import pack_sixbit, unpack_sixbit
+from .format_ids import xml_formats, xml_types
 
 stdout = getattr(sys.stdout, 'buffer', sys.stdout)
 
@@ -309,7 +310,7 @@ class KBinXML():
         # because we need the 'real' root
         self.xml_doc = self.xml_doc[0]
 
-if __name__ == '__main__':
+def main():
     if len(sys.argv) != 2:
         print('bin_xml.py file.[xml/bin]')
         exit()
@@ -322,3 +323,6 @@ if __name__ == '__main__':
         stdout.write(xml.to_text().encode('utf-8'))
     else:
         stdout.write(xml.to_binary())
+
+if __name__ == '__main__':
+    main()

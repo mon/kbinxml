@@ -1,4 +1,4 @@
-from kbinxml import KBinXML
+from .kbinxml import KBinXML
 # python 2/3 cross compat
 from io import open
 
