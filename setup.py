@@ -11,7 +11,7 @@ if sys.version_info < (3,0):
 
 setup(
     name='kbinxml',
-    version='1.0',
+    version='1.1',
     entry_points = {
         'console_scripts': ['kbinxml=kbinxml:main'],
     },

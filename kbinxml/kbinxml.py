@@ -59,6 +59,7 @@ class KBinXML():
 
     def from_text(self, input):
         self.xml_doc = etree.parse(BytesIO(input)).getroot()
+        self.encoding = XML_ENCODING
 
     @staticmethod
     def is_binary_xml(input):
