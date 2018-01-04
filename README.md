@@ -3,7 +3,7 @@
 An encoder/decoder for Konami's binary XML format, used in some of their games.
 
 ### Setup:
-`pip install .`
+`pip install git+https://github.com/mon/kbinxml/`
 
 ```python
 In [1]: from kbinxml import KBinXML
