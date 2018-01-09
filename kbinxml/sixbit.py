@@ -2,55 +2,27 @@
 from builtins import bytes
 from bitarray import bitarray
 
+charmap = '0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'
+bytemap = {charmap[i] : bytes(chr(i).encode()) for i in range(len(charmap))}
+
+@profile
 def pack_sixbit(string, byteBuf):
-    chars = str_to_sixbit(string)
+    chars = [bytemap[x] for x in string]
     bits = bitarray(endian='big')
     for c in chars:
-        bits.frombytes(c.encode())
+        bits.frombytes(c)
         # leave only the 6 bits we care for
         del bits[-8:-6]
     data = bytes(bits.tobytes())
-    byteBuf.append_u8(len(string))
-    byteBuf.append(data, 'B', len(data))
+    byteBuf.append_bytes((len(string),))
+    byteBuf.append_bytes(data)
 
 def unpack_sixbit(byteBuf):
     length = byteBuf.get_u8()
-    length_bytes = (length * 6 + 7) // 8
+    length_bits = length * 6
+    length_bytes = (length_bits + 7) // 8
     bitBuf = bitarray(endian='big')
-    bitBuf.frombytes(bytes(byteBuf.get('B', length_bytes)))
-    result = []
-    offset = 0
-    for i in range(length):
-        result.append(ord(bitBuf[offset:offset+6].tobytes()) >> (8 - 6))
-        offset += 6
-    return sixbit_to_str(result)
-
-# 0-9 for numbers, 10 is ':', 11 to 36 for capitals, 37 for underscore, 38-63 for lowercase
-def sixbit_to_str(decompressed):
-    string = ''
-    for d in decompressed:
-        if d <= 10:
-            d += ord('0')
-        elif d < 37:
-            d += 54
-        elif d == 37:
-            d += 58
-        else:
-            d += 59
-        string += chr(d)
-    return string
-
-def str_to_sixbit(string):
-    compress = []
-    for c in string:
-        if c >= '0' and c <= ':':
-            compress.append(ord(c) - ord('0'))
-        elif c >= 'A' and c <= 'Z':
-            compress.append(ord(c) - 54)
-        elif c == '_':
-            compress.append(ord(c) - 58)
-        elif c >= 'a' and c <= 'z':
-            compress.append(ord(c) - 59)
-        else:
-            raise ValueError('Node or attribute name can only contain alphanumeric + underscore')
-    return ''.join(map(chr, compress))
+    bitBuf.frombytes(bytes(byteBuf.get_bytes(length_bytes)))
+    result = [bitBuf[offset:offset+6].tobytes()[0] >> 2
+              for offset in range(0, length_bits, 6)]
+    return ''.join([charmap[x] for x in result])

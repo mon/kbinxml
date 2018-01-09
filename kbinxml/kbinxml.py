@@ -124,13 +124,13 @@ class KBinXML():
 
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
-        ret = self.dataBuf.get('B', size)
+        ret = self.dataBuf.get_bytes(size)
         self.dataBuf.realign_reads()
         return ret
 
     def data_append_auto(self, data):
         self.dataBuf.append_s32(len(data))
-        self.dataBuf.append(data, 'B', len(data))
+        self.dataBuf.append_bytes(data)
         self.dataBuf.realign_writes()
 
     def data_grab_string(self):
@@ -309,7 +309,7 @@ class KBinXML():
                     name = unpack_sixbit(self.nodeBuf)
                 else:
                     length = (self.nodeBuf.get_u8() & ~64) + 1
-                    name = self.nodeBuf.get('B', length)
+                    name = self.nodeBuf.get_bytes(length)
                     name = bytes(name).decode(self.encoding)
                 debug_print(name)
 

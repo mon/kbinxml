@@ -20,6 +20,11 @@ class ByteBuffer():
         else:
             return self.endian + str(count) + type
 
+    def get_bytes(self, count):
+        start = self.offset
+        self.offset += count
+        return self.data[start:self.offset]
+
     def get(self, type, count = None):
         ret = self.peek(type, count)
         size = calcsize(type)
@@ -32,6 +37,10 @@ class ByteBuffer():
         fmt = self._format_type(type, count)
         ret = unpack_from(fmt, self.data, self.offset)
         return ret[0] if count is None else ret
+
+    def append_bytes(self, data):
+        self.data.extend(data)
+        self.offset += len(data)
 
     def append(self, data, type, count = None):
         fmt = self._format_type(type, count)
