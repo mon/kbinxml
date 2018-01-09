@@ -9,14 +9,18 @@ requires = [
 if sys.version_info < (3,0):
     requires.append('future')
 
+version = '1.2'
 setup(
     name='kbinxml',
-    version='1.1',
+    description="Decoder/encoder for Konami's binary XML format",
+    long_description="See Github for up to date documentation",
+    version=version,
     entry_points = {
         'console_scripts': ['kbinxml=kbinxml:main'],
     },
     packages=['kbinxml'],
     url='https://github.com/mon/kbinxml/',
+    download_url = 'https://github.com/mon/kbinxml/archive/{}.tar.gz'.format(version),
     author='mon',
     author_email='me@mon.im',
     install_requires=requires

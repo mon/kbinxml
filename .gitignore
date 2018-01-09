@@ -1,3 +1,4 @@
 *.pyc
 dist/
 kbinxml.egg-info/
+build/
