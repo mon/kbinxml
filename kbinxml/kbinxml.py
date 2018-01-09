@@ -60,12 +60,67 @@ class KBinXML():
     def from_text(self, input):
         self.xml_doc = etree.parse(BytesIO(input)).getroot()
         self.encoding = XML_ENCODING
+        self.compressed = True
+        self.dataSize = None
 
     @staticmethod
     def is_binary_xml(input):
         nodeBuf = ByteBuffer(input)
         return (nodeBuf.get_u8() == SIGNATURE and
             nodeBuf.get_u8() in (SIG_COMPRESSED, SIG_UNCOMPRESSED))
+
+    @property
+    def _data_mem_size(self):
+        # This is probably better to be done in the parsing/writeout stage...
+
+        data_len = 0
+        for e in self.xml_doc.iter(tag=etree.Element):
+            t = e.attrib.get('__type')
+            if t is None:
+                continue
+
+            count = e.attrib.get('__count', 1)
+            size = e.attrib.get('__size', 1)
+            x = xml_formats[xml_types[t]]
+            if x['count'] > 0:
+                m = x['count'] * calcsize(x['type']) * count * size
+            elif x['name'] == 'bin':
+                m = len(e.text) // 2
+            else: # string
+                # null terminator space
+                m = len(e.text.encode(self.encoding)) + 1
+
+            if m <= 4:
+                continue
+
+            if x['name'] == 'bin':
+                data_len += (m + 1) & ~1
+            else:
+                data_len += (m + 3) & ~3
+        return data_len
+
+    @property
+    def mem_size(self):
+        '''used when allocating memory ingame'''
+
+        data_len = self._data_mem_size
+        node_count = len(list(self.xml_doc.iter(tag=etree.Element)))
+
+        if self.compressed:
+            size = 52 * node_count + data_len + 630
+        else:
+            tags_len = 0
+            for e in self.xml_doc.iter(tag=etree.Element):
+                e_len = max(len(e.tag), 8)
+                e_len = (e_len + 3) & ~3
+                tags_len += e_len
+
+            size = 56 * node_count + data_len + 630 + tags_len
+
+        # debugging
+        #print('nodes:{} ({}) data:{} ({})'.format(node_count,hex(node_count), data_len, hex(data_len)))
+
+        return (size + 8) & ~7
 
     def data_grab_auto(self):
         size = self.dataBuf.get_s32()
@@ -185,8 +240,9 @@ class KBinXML():
         # always has the isArray bit set
         self.nodeBuf.append_u8(xml_types['nodeEnd'] | 64)
 
-    def to_binary(self):
-        self.encoding = BIN_ENCODING
+    def to_binary(self, encoding = BIN_ENCODING):
+        self.encoding = encoding
+        self.compressed = True
 
         header = ByteBuffer()
         header.append_u8(SIGNATURE)
@@ -205,7 +261,8 @@ class KBinXML():
         self.nodeBuf.append_u8(xml_types['endSection'] | 64)
         self.nodeBuf.realign_writes()
         header.append_u32(len(self.nodeBuf))
-        self.nodeBuf.append_u32(len(self.dataBuf))
+        self.dataSize = len(self.dataBuf)
+        self.nodeBuf.append_u32(self.dataSize)
         return bytes(header.data + self.nodeBuf.data + self.dataBuf.data)
 
     def from_binary(self, input):
@@ -227,7 +284,7 @@ class KBinXML():
         self.nodeBuf.end = nodeEnd
 
         self.dataBuf = ByteBuffer(input, nodeEnd)
-        dataSize = self.dataBuf.get_u32()
+        self.dataSize = self.dataBuf.get_u32()
         # This is all no fun
         self.dataByteBuf = ByteBuffer(input, nodeEnd)
         self.dataWordBuf = ByteBuffer(input, nodeEnd)
