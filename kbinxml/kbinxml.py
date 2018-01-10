@@ -182,6 +182,14 @@ class KBinXML():
             self.dataBuf.append(data, type, count)
             self.dataBuf.realign_writes()
 
+    def append_node_name(self, name):
+        if self.compressed:
+            pack_sixbit(name, self.nodeBuf)
+        else:
+            enc = name.encode(self.encoding)
+            self.nodeBuf.append_u8((len(enc) - 1) | 64)
+            self.nodeBuf.append_bytes(enc)
+
     def _node_to_binary(self, node):
         nodeType = node.attrib.get('__type')
         if not nodeType:
@@ -201,7 +209,7 @@ class KBinXML():
         self.nodeBuf.append_u8(nodeId | isArray)
 
         name = node.tag
-        pack_sixbit(name, self.nodeBuf)
+        self.append_node_name(name)
 
         if nodeType != 'void':
             fmt = xml_formats[nodeId]
@@ -232,7 +240,7 @@ class KBinXML():
             if key not in ['__type', '__size', '__count']:
                 self.data_append_string(value)
                 self.nodeBuf.append_u8(xml_types['attr'])
-                pack_sixbit(key, self.nodeBuf)
+                self.append_node_name(key)
 
         for child in node.iterchildren(tag=etree.Element):
             self._node_to_binary(child)
@@ -240,13 +248,16 @@ class KBinXML():
         # always has the isArray bit set
         self.nodeBuf.append_u8(xml_types['nodeEnd'] | 64)
 
-    def to_binary(self, encoding = BIN_ENCODING):
+    def to_binary(self, encoding = BIN_ENCODING, compressed = True):
         self.encoding = encoding
-        self.compressed = True
+        self.compressed = compressed
 
         header = ByteBuffer()
         header.append_u8(SIGNATURE)
-        header.append_u8(SIG_COMPRESSED)
+        if self.compressed:
+            header.append_u8(SIG_COMPRESSED)
+        else:
+            header.append_u8(SIG_UNCOMPRESSED)
         header.append_u8(encoding_vals[self.encoding])
         # Python's ints are big, so can't just bitwise invert
         header.append_u8(0xFF ^ encoding_vals[self.encoding])

@@ -5,7 +5,6 @@ from bitarray import bitarray
 charmap = '0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'
 bytemap = {charmap[i] : bytes(chr(i).encode()) for i in range(len(charmap))}
 
-@profile
 def pack_sixbit(string, byteBuf):
     chars = [bytemap[x] for x in string]
     bits = bitarray(endian='big')
