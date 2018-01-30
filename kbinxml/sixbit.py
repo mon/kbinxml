@@ -22,6 +22,6 @@ def unpack_sixbit(byteBuf):
     length_bytes = (length_bits + 7) // 8
     bitBuf = bitarray(endian='big')
     bitBuf.frombytes(bytes(byteBuf.get_bytes(length_bytes)))
-    result = [bitBuf[offset:offset+6].tobytes()[0] >> 2
+    result = [bytes(bitBuf[offset:offset+6].tobytes())[0] >> 2
               for offset in range(0, length_bits, 6)]
     return ''.join([charmap[x] for x in result])

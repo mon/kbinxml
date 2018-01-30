@@ -9,7 +9,7 @@ requires = [
 if sys.version_info < (3,0):
     requires.append('future')
 
-version = '1.3'
+version = '1.4'
 setup(
     name='kbinxml',
     description="Decoder/encoder for Konami's binary XML format",
