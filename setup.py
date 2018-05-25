@@ -3,13 +3,12 @@ import sys
 
 
 requires = [
-        'bitarray',
         'lxml',
 ]
 if sys.version_info < (3,0):
     requires.append('future')
 
-version = '1.4'
+version = '1.5'
 setup(
     name='kbinxml',
     description="Decoder/encoder for Konami's binary XML format",
