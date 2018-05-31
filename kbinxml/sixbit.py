@@ -1,5 +1,21 @@
 # python 3 style, ints instead of b''
-from builtins import bytes
+from builtins import bytes as newbytes
+
+def py2_int_to_bytes(n, length):
+    h = '%x' % n
+    s = ('0'*(len(h) % 2) + h).zfill(length*2).decode('hex')
+    return newbytes(s)
+
+try:
+    # python 3
+    int.from_bytes
+    int_from_bytes = lambda b : int.from_bytes(b, byteorder='big')
+    int_to_bytes = lambda i, length : i.to_bytes(length, byteorder='big')
+except AttributeError:
+    # python 2
+    int_from_bytes = lambda b : int(bytes(b).encode('hex'), 16)
+    int_to_bytes = py2_int_to_bytes
+
 
 charmap = '0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'
 bytemap = {charmap[i] : i for i in range(len(charmap))}
@@ -14,7 +30,7 @@ def pack_sixbit(string, byteBuf):
         bits <<= 6
         bits |= c
     bits <<= padding
-    data = bytes(bits.to_bytes((len(string)*6 + padding) // 8, byteorder='big'))
+    data = int_to_bytes(bits, (len(string)*6 + padding) // 8)
     byteBuf.append_bytes((len(string),))
     byteBuf.append_bytes(data)
 
@@ -25,7 +41,7 @@ def unpack_sixbit(byteBuf):
     padding = 8 - (length_bits % 8)
     if padding == 8:
         padding = 0
-    bits = int.from_bytes(bytes(byteBuf.get_bytes(length_bytes)), byteorder='big')
+    bits = int_from_bytes(byteBuf.get_bytes(length_bytes))
     bits >>= padding
     result = []
     for _ in range(length):
