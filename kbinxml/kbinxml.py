@@ -23,14 +23,14 @@ SIG_COMPRESSED = 0x42
 SIG_UNCOMPRESSED = 0x45
 
 XML_ENCODING = 'UTF-8'
-BIN_ENCODING = 'SHIFT_JISX0213'
+BIN_ENCODING = 'cp932' # windows shift-jis variant
 
 # NOTE: all of these are their python codec names
 encoding_strings = {
     0x20: 'ASCII',
     0x00: 'ISO-8859-1',
     0x60: 'EUC_JP',
-    0x80: 'SHIFT_JISX0213',
+    0x80: 'cp932',
     0xA0: 'UTF-8'
 }
 
