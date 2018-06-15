@@ -28,7 +28,7 @@ BIN_ENCODING = 'cp932' # windows shift-jis variant
 # NOTE: all of these are their python codec names
 encoding_strings = {
     0x20: 'ASCII',
-    0x00: 'ISO-8859-1',
+    0x40: 'ISO-8859-1',
     0x60: 'EUC_JP',
     0x80: 'cp932',
     0xA0: 'UTF-8'
