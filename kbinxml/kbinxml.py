@@ -27,6 +27,7 @@ BIN_ENCODING = 'cp932' # windows shift-jis variant
 
 # NOTE: all of these are their python codec names
 encoding_strings = {
+    0x00: 'cp932',
     0x20: 'ASCII',
     0x40: 'ISO-8859-1',
     0x60: 'EUC_JP',
@@ -35,6 +36,8 @@ encoding_strings = {
 }
 
 encoding_vals = {val : key for key, val in encoding_strings.items()}
+# ensure that duplicated value from above is correct. Avoid exporting 0x00 type
+encoding_vals['cp932'] = 0x80
 
 def debug_print(string):
     if DEBUG:
