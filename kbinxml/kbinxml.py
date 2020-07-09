@@ -377,7 +377,8 @@ class KBinXML():
             else:
                 string = ' '.join(map(nodeFormat.get('toStr', str), data))
 
-            node.text = string
+            # some strings have extra NUL bytes, compatible behaviour is to strip
+            node.text = string.strip('\0')
 
         # because we need the 'real' root
         self.xml_doc = self.xml_doc[0]
