@@ -193,6 +193,23 @@ class KBinXML():
             self.nodeBuf.append_u8((len(enc) - 1) | 64)
             self.nodeBuf.append_bytes(enc)
 
+    def _add_namespace(self, node, name, value):
+        ''' Add a namespace (xmlns) to an existing node. Returns the new node to
+            work with '''
+
+        # I wish this worked, but we need to specifiy it in the constructor
+        # node.nsmap[name] = value
+        ns = node.nsmap
+        ns[name] = value
+        old_node = node
+        node = etree.Element(old_node.tag, nsmap=ns)
+        node[:] = old_node[:]
+        parent = old_node.getparent()
+        if parent is not None:
+            parent.remove(old_node)
+            parent.append(node)
+        return node
+
     def _node_to_binary(self, node):
         nodeType = node.attrib.get('__type')
         if not nodeType:
@@ -331,7 +348,17 @@ class KBinXML():
 
             if nodeType == xml_types['attr']:
                 value = self.data_grab_string()
-                node.attrib[name] = value
+                # because someone thought it was a good idea to serialise namespaces
+                if name.startswith('xmlns:'):
+                    _, name = name.split('xmlns:')
+                    node = self._add_namespace(node, name, value)
+                elif ':' in name:
+                    prefix, name = name.split(':')
+                    # if this fails, the xml is invalid. Open an issue.
+                    node.set(etree.QName(node.nsmap[prefix], name), value)
+                # this is the case you'll get in 99% of places
+                else:
+                    node.attrib[name] = value
             elif nodeType == xml_types['nodeEnd']:
                 if node.getparent() is not None:
                     node = node.getparent()
