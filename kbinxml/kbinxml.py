@@ -68,6 +68,9 @@ class KBinXML():
 
     @staticmethod
     def is_binary_xml(input):
+        if len(input) < 2:
+            return False
+
         nodeBuf = ByteBuffer(input)
         return (nodeBuf.get_u8() == SIGNATURE and
             nodeBuf.get_u8() in (SIG_COMPRESSED, SIG_UNCOMPRESSED))
