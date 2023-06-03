@@ -3,8 +3,9 @@
   <entry __type="ip4" __count="2">127.0.0.1 192.168.0.1</entry>
   <entry __type="str" attr="test" attr2="best">Hello, world!</entry>
   <superstar __type="str" babe="ミツル">シ　イス　マイ　ワイフ</superstar>
-  <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
+  <xXx_T4GG3R_xXx __type="2u8">8 9</xXx_T4GG3R_xXx>
   <aligned __type="u8">12</aligned>
+  <aligned_arr __type="u8" __count="1">13</aligned_arr>
   <entry __type="bin" __size="4">deadbeef</entry>
   <entry __type="bin" __size="4">deadbe7a</entry>
   <entry __type="3u8" __count="2">1 2 3 1 2 3</entry>
