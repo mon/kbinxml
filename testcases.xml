@@ -8,9 +8,11 @@
     <!-- Testing encoding, plus __type-less should become string -->
     <superstar babe="ミツル">シ　イス　マイ　ワイフ</superstar>
     <!-- Testing 6bit conversion -->
-    <xXx_T4GG3R_xXx __type="3u8">8 9 10</xXx_T4GG3R_xXx>
-    <!-- Shouldn't have alignment issues from the 3u8 -->
+    <xXx_T4GG3R_xXx __type="2u8">8 9</xXx_T4GG3R_xXx>
+    <!-- Shouldn't have alignment issues from the 2u8 -->
     <aligned __type="u8">12</aligned>
+    <!-- Array contents are never packed -->
+    <aligned_arr __type="u8" __count="1">13</aligned_arr>
     <!-- Binary parsing -->
     <entry __type="binary">DEADBEEF</entry>
     <!-- Lowercase, too -->
