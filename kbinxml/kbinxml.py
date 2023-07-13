@@ -141,7 +141,19 @@ class KBinXML():
 
     def data_grab_string(self):
         data = self.data_grab_auto()
-        return bytes(data[:-1]).decode(self.encoding)
+        data = bytes(data[:-1])
+        try:
+            return data.decode(self.encoding)
+        except UnicodeDecodeError:
+            if self.encoding == 'cp932':
+                # having to do this kinda sucks, but it's better than just giving up
+                print("KBinXML: Malformed Shift-JIS string found, attempting UTF-8 decode", file=sys.stderr)
+                print("KBinXML: Raw string data:", data, file=sys.stderr)
+                return data.decode('utf8')
+            else:
+                # in the unlikely event of malformed data that isn't shift-jis,
+                # fix it later
+                raise
 
     def data_append_string(self, string):
         string = bytes(string.encode(self.encoding) + b'\0')
