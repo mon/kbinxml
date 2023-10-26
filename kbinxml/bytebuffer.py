@@ -1,31 +1,33 @@
 from struct import *
+from typing import Any
 
-class ByteBuffer():
-    def __init__(self, input = b'', offset = 0, endian = '>'):
+
+class ByteBuffer:
+    def __init__(self, input: bytes | bytearray | str = b"", offset=0, endian=">"):
         # so multiple ByteBuffers can hold on to one set of underlying data
         # this is useful for writers in multiple locations
         if isinstance(input, bytearray):
             self.data = input
         else:
             if not isinstance(input, bytes):
-                input = input.encode('utf-8')
+                input = input.encode("utf-8")
             self.data = bytearray(input)
         self.endian = endian
         self.offset = offset
         self.end = len(self.data)
 
-    def _format_type(self, type, count):
+    def _format_type(self, type: str, count: int | None = None):
         if count is None:
             return self.endian + type
         else:
             return self.endian + str(count) + type
 
-    def get_bytes(self, count):
+    def get_bytes(self, count: int):
         start = self.offset
         self.offset += count
-        return self.data[start:self.offset]
+        return self.data[start : self.offset]
 
-    def get(self, type, count = None):
+    def get(self, type: str, count: int | None = None):
         ret = self.peek(type, count)
         size = calcsize(type)
         if count is not None:
@@ -33,16 +35,16 @@ class ByteBuffer():
         self.offset += size
         return ret
 
-    def peek(self, type, count = None):
+    def peek(self, type: str, count: int | None = None):
         fmt = self._format_type(type, count)
         ret = unpack_from(fmt, self.data, self.offset)
         return ret[0] if count is None else ret
 
-    def append_bytes(self, data):
+    def append_bytes(self, data: bytes):
         self.data.extend(data)
         self.offset += len(data)
 
-    def append(self, data, type, count = None):
+    def append(self, data: Any, type: str, count: int | None = None):
         fmt = self._format_type(type, count)
         self.offset += calcsize(fmt)
         try:
@@ -50,7 +52,7 @@ class ByteBuffer():
         except TypeError:
             self.data.extend(pack(fmt, data))
 
-    def set(self, data, offset, type, count = None):
+    def set(self, data: Any, offset: int, type: str, count: int | None = None):
         fmt = self._format_type(type, count)
         try:
             pack_into(fmt, self.data, offset, *data)
@@ -61,54 +63,109 @@ class ByteBuffer():
     def hasData(self):
         return self.offset < self.end
 
-    def realign_writes(self, size = 4):
+    def realign_writes(self, size=4):
         while len(self) % size:
             self.append_u8(0)
 
-    def realign_reads(self, size = 4):
+    def realign_reads(self, size=4):
         while self.offset % size:
             self.offset += 1
 
     def __len__(self):
         return len(self.data)
 
-typeMap = {
-    's8'  : 'b',
-    's16' : 'h',
-    's32' : 'i',
-    's64' : 'q',
-    'u8'  : 'B',
-    'u16' : 'H',
-    'u32' : 'I',
-    'u64' : 'Q'
-}
+    def get_s8(self) -> int:
+        return self.get("b")
 
-def _make_get(fmt):
-    def _method(self):
-        return self.get(fmt)
-    return _method
+    def peek_s8(self) -> int:
+        return self.peek("b")
 
-def _make_peek(fmt):
-    def _method(self):
-        return self.peek(fmt)
-    return _method
+    def append_s8(self, data: int):
+        return self.append(data, "b")
 
-def _make_append(fmt):
-    def _method(self, data):
-        return self.append(data, fmt)
-    return _method
+    def set_s8(self, data: int, offset: int):
+        return self.set(data, offset, "b")
 
-def _make_set(fmt):
-    def _method(self, data, offset):
-        return self.set(data, offset, fmt)
-    return _method
+    def get_s16(self) -> int:
+        return self.get("h")
 
-for name, fmt in typeMap.items():
-    _get = _make_get(fmt)
-    _peek = _make_peek(fmt)
-    _append = _make_append(fmt)
-    _set = _make_set(fmt)
-    setattr(ByteBuffer, 'get_' + name, _get)
-    setattr(ByteBuffer, 'peek_' + name, _peek)
-    setattr(ByteBuffer, 'append_' + name, _append)
-    setattr(ByteBuffer, 'set_' + name, _set)
+    def peek_s16(self) -> int:
+        return self.peek("h")
+
+    def append_s16(self, data: int):
+        return self.append(data, "h")
+
+    def set_s16(self, data: int, offset: int):
+        return self.set(data, offset, "h")
+
+    def get_s32(self) -> int:
+        return self.get("i")
+
+    def peek_s32(self) -> int:
+        return self.peek("i")
+
+    def append_s32(self, data: int):
+        return self.append(data, "i")
+
+    def set_s32(self, data: int, offset: int):
+        return self.set(data, offset, "i")
+
+    def get_s64(self) -> int:
+        return self.get("q")
+
+    def peek_s64(self) -> int:
+        return self.peek("q")
+
+    def append_s64(self, data: int):
+        return self.append(data, "q")
+
+    def set_s64(self, data: int, offset: int):
+        return self.set(data, offset, "q")
+
+    def get_u8(self) -> int:
+        return self.get("B")
+
+    def peek_u8(self) -> int:
+        return self.peek("B")
+
+    def append_u8(self, data: int):
+        return self.append(data, "B")
+
+    def set_u8(self, data: int, offset: int):
+        return self.set(data, offset, "B")
+
+    def get_u16(self) -> int:
+        return self.get("H")
+
+    def peek_u16(self) -> int:
+        return self.peek("H")
+
+    def append_u16(self, data: int):
+        return self.append(data, "H")
+
+    def set_u16(self, data: int, offset: int):
+        return self.set(data, offset, "H")
+
+    def get_u32(self) -> int:
+        return self.get("I")
+
+    def peek_u32(self) -> int:
+        return self.peek("I")
+
+    def append_u32(self, data: int):
+        return self.append(data, "I")
+
+    def set_u32(self, data: int, offset: int):
+        return self.set(data, offset, "I")
+
+    def get_u64(self) -> int:
+        return self.get("Q")
+
+    def peek_u64(self) -> int:
+        return self.peek("Q")
+
+    def append_u64(self, data: int):
+        return self.append(data, "Q")
+
+    def set_u64(self, data: int, offset: int):
+        return self.set(data, offset, "Q")

@@ -1,22 +1,27 @@
 from struct import pack, unpack
 
-def parseIP(string):
-    bunch = map(int, string.split('.'))
-    # pack to bytes
-    p = pack('4B', *bunch)
-    # unpack as u16
-    return unpack('>I', p)[0]
 
-def writeIP(raw):
+def parseIP(string: str) -> int:
+    bunch = map(int, string.split("."))
     # pack to bytes
-    p = pack('>I', raw)
+    p = pack("4B", *bunch)
+    # unpack as u32
+    return unpack(">I", p)[0]
+
+
+def writeIP(raw: int):
+    # pack to bytes
+    p = pack(">I", raw)
     # unpack
-    return '.'.join(map(str, unpack('4B', p)))
+    return ".".join(map(str, unpack("4B", p)))
 
-def writeFloat(raw):
+
+def writeFloat(raw: float):
     # this is just how floats get printed...
-    return '{0:.6f}'.format(raw)
+    return f"{raw:.6f}"
 
+
+# fmt: off
 xml_formats = {
     1  : { 'names' : ['void']},
     2  : { 'type' : 'b',  'count' : 1,  'names' : ['s8']},
@@ -75,15 +80,16 @@ xml_formats = {
     55 : { 'type' : 'b',  'count' : 4,  'names' : ['4b']},
     56 : { 'type' : 'b',  'count' : 16, 'names' : ['vb']}
 }
+# fmt: on
 
 # little less boilerplate for writing
 for key, val in xml_formats.items():
-    xml_formats[key]['name'] = xml_formats[key]['names'][0]
+    xml_formats[key]["name"] = xml_formats[key]["names"][0]
 
-xml_types = {}
+xml_types: dict[str, int] = {}
 for key, val in xml_formats.items():
-    for n in val['names']:
+    for n in val["names"]:
         xml_types[n] = key
-xml_types['nodeStart'] = 1
-xml_types['nodeEnd'] = 190
-xml_types['endSection'] = 191
+xml_types["nodeStart"] = 1
+xml_types["nodeEnd"] = 190
+xml_types["endSection"] = 191
