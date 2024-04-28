@@ -1,13 +1,12 @@
 from setuptools import setup
 
-
 requires = [
     "lxml",
 ]
 
 python_requires = ">=3.10"
 
-version = "2.0"
+version = "2.1"
 setup(
     name="kbinxml",
     description="Decoder/encoder for Konami's binary XML format",

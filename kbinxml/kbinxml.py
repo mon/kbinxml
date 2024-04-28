@@ -1,14 +1,14 @@
 import argparse
-from struct import calcsize
-import sys
 import operator
+import sys
 from io import BytesIO
+from struct import calcsize
 
 import lxml.etree as etree
 
 from .bytebuffer import ByteBuffer
-from .sixbit import pack_sixbit, unpack_sixbit
 from .format_ids import xml_formats, xml_types
+from .sixbit import pack_sixbit, unpack_sixbit
 
 DEBUG_OFFSETS = False
 DEBUG = False
@@ -479,10 +479,14 @@ def main():
 
     xml = KBinXML(input, convert_illegal_things=args.convert_illegal)
     stdout = getattr(sys.stdout, "buffer", sys.stdout)
-    if KBinXML.is_binary_xml(input):
-        stdout.write(xml.to_text().encode("utf-8"))
-    else:
-        stdout.write(xml.to_binary())
+    try:
+        if KBinXML.is_binary_xml(input):
+            stdout.write(xml.to_text().encode("utf-8"))
+        else:
+            stdout.write(xml.to_binary())
+    except BrokenPipeError:
+        # allows kbinxml to be piped to `head` or similar
+        sys.exit(141)
 
 
 if __name__ == "__main__":
