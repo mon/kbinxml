@@ -270,7 +270,7 @@ class KBinXML:
 
             val = node.text
             if fmt["name"] == "bin":
-                data = bytes(bytearray.fromhex(val))
+                data = bytes.fromhex(val)
             elif fmt["name"] == "str":
                 if val is None:  # empty string
                     val = ""
@@ -282,8 +282,12 @@ class KBinXML:
                     raise ValueError("Array length does not match __count attribute")
 
             if isArray or fmt["count"] == -1:
-                self.dataBuf.append_u32(len(data) * calcsize(fmt["type"]))
-                self.dataBuf.append(data, fmt["type"], len(data))
+                if fmt["count"] == -1:
+                    self.dataBuf.append_u32(len(data))
+                    self.dataBuf.append_bytes(data)
+                else:
+                    self.dataBuf.append_u32(len(data) * calcsize(fmt["type"]))
+                    self.dataBuf.append(data, fmt["type"], len(data))
                 self.dataBuf.realign_writes()
             else:
                 self.data_append_aligned(data, fmt["type"], fmt["count"])
@@ -436,18 +440,21 @@ class KBinXML:
                 node.attrib["__count"] = str(arrayCount)
             totalCount = arrayCount * varCount
 
-            if isArray:
-                data = self.dataBuf.get(nodeFormat["type"], totalCount)
-                self.dataBuf.realign_reads()
-            else:
-                data = self.data_grab_aligned(nodeFormat["type"], totalCount)
-
             if nodeType == xml_types["binary"]:
                 node.attrib["__size"] = str(totalCount)
-                string = "".join(("{0:02x}".format(x) for x in data))
+                raw = self.dataBuf.get_bytes_exact(totalCount)
+                self.dataBuf.realign_reads()
+                string = raw.hex()
             elif nodeType == xml_types["string"]:
-                string = bytes(data[:-1]).decode(self.encoding)
+                raw = self.dataBuf.get_bytes_exact(totalCount)
+                self.dataBuf.realign_reads()
+                string = bytes(raw[:-1]).decode(self.encoding)
+            elif isArray:
+                data = self.dataBuf.get(nodeFormat["type"], totalCount)
+                self.dataBuf.realign_reads()
+                string = " ".join(map(nodeFormat.get("toStr", str), data))
             else:
+                data = self.data_grab_aligned(nodeFormat["type"], totalCount)
                 string = " ".join(map(nodeFormat.get("toStr", str), data))
 
             # some strings have extra NUL bytes, compatible behaviour is to strip
